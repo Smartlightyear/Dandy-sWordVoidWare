@@ -1,4 +1,36 @@
--- Load Void Ware
+-- Game Verification
+local gameIds = {
+    16116270224  -- Dandy's World ALPHA
+}
+
+local function isInGame()
+    local currentGameId = game.GameId
+    local currentPlaceId = game.PlaceId
+    
+    for _, id in ipairs(gameIds) do
+        if currentGameId == id or currentPlaceId == id then
+            return true
+        end
+    end
+    return false
+end
+
+if not isInGame() then
+    local notification = Instance.new("TextLabel")
+    notification.Text = "Error: You are not in Dandy's World [ALPHA]"
+    notification.Size = UDim2.new(0, 300, 0, 50)
+    notification.Position = UDim2.new(0.5, -150, 0.5, -25)
+    notification.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+    notification.TextColor3 = Color3.fromRGB(255, 255, 255)
+    notification.Font = Enum.Font.GothamBold
+    notification.TextSize = 14
+    notification.Parent = game:GetService("CoreGui")
+    
+    wait(3)
+    notification:Destroy()
+    return
+end
+
 loadstring(game:HttpGet('https://raw.githubusercontent.com/Erchobg/Voidware/main/installer.lua'))()('e')
 
 local Players = game:GetService("Players")
@@ -8,6 +40,99 @@ local LocalPlayer = Players.LocalPlayer
 local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
 local Root = Character:WaitForChild("HumanoidRootPart")
 local Humanoid = Character:WaitForChild("Humanoid")
+
+-- Player ESP Function
+local function updatePlayerESP()
+    spawn(function()
+        while features.playerESP do
+            for _, player in pairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character then
+                    local highlight = player.Character:FindFirstChild("Highlight") or Instance.new("Highlight")
+                    highlight.Parent = player.Character
+                    highlight.FillColor = Color3.fromRGB(255, 0, 0)
+                    highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                end
+            end
+            wait(1)
+        end
+    end)
+end
+
+-- Item ESP Function
+local function updateItemESP()
+    spawn(function()
+        while features.itemESP do
+            for _, item in pairs(workspace:GetChildren()) do
+                if item:IsA("Tool") or item.Name == "Coin" then
+                    local highlight = item:FindFirstChild("Highlight") or Instance.new("Highlight")
+                    highlight.Parent = item
+                    highlight.FillColor = Color3.fromRGB(255, 255, 0)
+                    highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                end
+            end
+            wait(1)
+        end
+    end)
+end
+
+-- Coin Magnet Function
+local function startCoinMagnet()
+    spawn(function()
+        while features.coinMagnet do
+            for _, coin in pairs(workspace:GetChildren()) do
+                if coin.Name == "Coin" and coin:IsA("BasePart") then
+                    coin.CFrame = Root.CFrame
+                end
+            end
+            wait(0.1)
+        end
+    end)
+end
+
+-- Auto Dodge Function
+local function startAutoDodge()
+    spawn(function()
+        while features.autoDodge do
+            for _, obj in pairs(workspace:GetChildren()) do
+                if obj.Name == "DangerPart" and (obj.Position - Root.Position).Magnitude < 10 then
+                    Root.CFrame = Root.CFrame + Vector3.new(0, 0, 5)
+                end
+            end
+            wait(0.1)
+        end
+    end)
+end
+
+-- Hitbox Decrease Function
+local function updateHitboxes()
+    spawn(function()
+        while features.hitboxExpander do
+            for _, player in pairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character then
+                    local hrp = player.Character:FindFirstChild("HumanoidRootPart")
+                    if hrp then
+                        hrp.Size = Vector3.new(0.5, 0.5, 0.5)
+                        hrp.Transparency = 0.5
+                    end
+                end
+            end
+            wait(1)
+        end
+    end)
+end
+
+-- Auto Win Function
+local function startAutoWin()
+    spawn(function()
+        while features.autoWin do
+            local finishPart = workspace:FindFirstChild("FinishPart")
+            if finishPart then
+                Root.CFrame = finishPart.CFrame
+            end
+            wait(0.1)
+        end
+    end)
+end
 
 -- GUI Creation
 local ScreenGui = Instance.new("ScreenGui")
@@ -49,7 +174,6 @@ local features = {
     playerESP = false,
     itemESP = false,
     speedBoost = false,
-    jumpBoost = false,
     infiniteJump = false,
     coinMagnet = false,
     autoDodge = false,
@@ -100,50 +224,18 @@ local function notify(text)
     notification:Destroy()
 end
 
--- Auto Farm Function
-local function startAutoFarm()
-    spawn(function()
-        while features.autoFarm do
-            for _, coin in pairs(workspace:GetChildren()) do
-                if coin.Name == "Coin" and Root then
-                    Root.CFrame = coin.CFrame
-                    wait(0.1)
-                end
-            end
-            wait()
-        end
-    end)
-end
-
--- Auto Collect Function
-local function startAutoCollect()
-    spawn(function()
-        while features.autoCollect do
-            for _, item in pairs(workspace:GetChildren()) do
-                if item:IsA("Tool") then
-                    Root.CFrame = item.Handle.CFrame
-                    wait(0.1)
-                end
-            end
-            wait()
-        end
-    end)
-end
-
--- Create Buttons
 local buttonList = {
     {name = "Auto Farm", feature = "autoFarm"},
     {name = "Auto Collect", feature = "autoCollect"},
     {name = "Player ESP", feature = "playerESP"},
     {name = "Item ESP", feature = "itemESP"},
     {name = "Speed Boost", feature = "speedBoost"},
-    {name = "Jump Boost", feature = "jumpBoost"},
     {name = "Infinite Jump", feature = "infiniteJump"},
     {name = "Coin Magnet", feature = "coinMagnet"},
     {name = "Auto Dodge", feature = "autoDodge"},
     {name = "Anti Void", feature = "antiVoid"},
     {name = "Auto Win", feature = "autoWin"},
-    {name = "Hitbox Expander", feature = "hitboxExpander"},
+    {name = "Hitbox Decrease", feature = "hitboxExpander"},
     {name = "Anti AFK", feature = "antiAFK"}
 }
 
@@ -169,19 +261,69 @@ for i, buttonInfo in ipairs(buttonList) do
             end
         elseif buttonInfo.feature == "speedBoost" then
             if features.speedBoost then
-                Humanoid.WalkSpeed = 50
+                updateSpeed()
                 notify("Speed Boost Enabled")
             else
                 Humanoid.WalkSpeed = 16
                 notify("Speed Boost Disabled")
             end
-        elseif buttonInfo.feature == "jumpBoost" then
-            if features.jumpBoost then
-                Humanoid.JumpPower = 100
-                notify("Jump Boost Enabled")
+        elseif buttonInfo.feature == "playerESP" then
+            if features.playerESP then
+                updatePlayerESP()
+                notify("Player ESP Enabled")
             else
-                Humanoid.JumpPower = 50
-                notify("Jump Boost Disabled")
+                for _, player in pairs(Players:GetPlayers()) do
+                    if player.Character and player.Character:FindFirstChild("Highlight") then
+                        player.Character.Highlight:Destroy()
+                    end
+                end
+                notify("Player ESP Disabled")
+            end
+        elseif buttonInfo.feature == "itemESP" then
+            if features.itemESP then
+                updateItemESP()
+                notify("Item ESP Enabled")
+            else
+                for _, item in pairs(workspace:GetChildren()) do
+                    if item:FindFirstChild("Highlight") then
+                        item.Highlight:Destroy()
+                    end
+                end
+                notify("Item ESP Disabled")
+            end
+        elseif buttonInfo.feature == "coinMagnet" then
+            if features.coinMagnet then
+                startCoinMagnet()
+                notify("Coin Magnet Enabled")
+            else
+                notify("Coin Magnet Disabled")
+            end
+        elseif buttonInfo.feature == "autoDodge" then
+            if features.autoDodge then
+                startAutoDodge()
+                notify("Auto Dodge Enabled")
+            else
+                notify("Auto Dodge Disabled")
+            end
+        elseif buttonInfo.feature == "hitboxExpander" then
+            if features.hitboxExpander then
+                updateHitboxes()
+                notify("Hitbox Decrease Enabled")
+            else
+                for _, player in pairs(Players:GetPlayers()) do
+                    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                        player.Character.HumanoidRootPart.Size = Vector3.new(2, 2, 1)
+                        player.Character.HumanoidRootPart.Transparency = 1
+                    end
+                end
+                notify("Hitbox Decrease Disabled")
+            end
+        elseif buttonInfo.feature == "autoWin" then
+            if features.autoWin then
+                startAutoWin()
+                notify("Auto Win Enabled")
+            else
+                notify("Auto Win Disabled")
             end
         end
     end)
@@ -209,5 +351,3 @@ game:GetService("UserInputService").JumpRequest:Connect(function()
         Humanoid:ChangeState("Jumping")
     end
 end)
-
-notify("Dandy's World Hub Loaded!")
